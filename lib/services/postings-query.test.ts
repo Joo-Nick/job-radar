@@ -3,7 +3,7 @@ import type { Db } from "@/db";
 import { postings } from "@/db/schema";
 import { createTestDb, createUser } from "@/test/db";
 import { bookmarkPosting } from "./bookmarks";
-import { listOpenPostings } from "./postings-query";
+import { listOpenPostings, listPostingsByDeadline } from "./postings-query";
 
 const now = new Date("2026-09-29T12:00:00+09:00");
 
@@ -33,6 +33,30 @@ describe("listOpenPostings", () => {
     const list = await listOpenPostings(db, { userId: "u1", filter, now });
 
     expect(list.map((p) => p.sourceId)).toEqual(["soon", "late"]);
+  });
+
+  it("lists postings due within a range, including closed ones, for the calendar", async () => {
+    const list = await listPostingsByDeadline(db, {
+      userId: "u1",
+      filter: null,
+      from: new Date("2026-09-28T00:00:00+09:00"),
+      to: new Date("2026-10-02T00:00:00+09:00"),
+    });
+
+    expect(list.map((p) => p.sourceId)).toEqual(["closed", "soon"]);
+  });
+
+  it("applies the subscription filter to the calendar range", async () => {
+    const filter = { keywords: ["곧"], careerType: "any" as const, regions: [], companies: [] };
+
+    const list = await listPostingsByDeadline(db, {
+      userId: "u1",
+      filter,
+      from: new Date("2026-09-01T00:00:00+09:00"),
+      to: new Date("2026-11-01T00:00:00+09:00"),
+    });
+
+    expect(list.map((p) => p.sourceId)).toEqual(["soon"]);
   });
 
   it("marks the user's bookmarks", async () => {
