@@ -4,14 +4,15 @@ import { nextCookies } from "better-auth/next-js";
 import { headers } from "next/headers";
 import { getDb } from "@/db";
 import * as schema from "@/db/schema";
-import { requireEnv } from "@/lib/env";
-
 function createAuth() {
+  const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET } = process.env;
   return betterAuth({
     database: drizzleAdapter(getDb(), { provider: "pg", schema }),
-    socialProviders: {
-      google: { clientId: requireEnv("GOOGLE_CLIENT_ID"), clientSecret: requireEnv("GOOGLE_CLIENT_SECRET") },
-    },
+    // OAuth 키를 넣기 전에도 랜딩 페이지는 뜨도록 키가 있을 때만 등록
+    socialProviders:
+      GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET
+        ? { google: { clientId: GOOGLE_CLIENT_ID, clientSecret: GOOGLE_CLIENT_SECRET } }
+        : {},
     plugins: [nextCookies()],
   });
 }
